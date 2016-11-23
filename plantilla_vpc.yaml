@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  myVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'false'
+      EnableDnsHostnames: 'false'
+      InstanceTenancy: dedicated
+      Tags:
+      - Key: Name
+        Value: vpc_alexjavi
+
+  mySubnetPublic:
+    DependsOn: myVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: myVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: "us-west-1a"
+      Tags:
+      - Key: Name
+        Value: public_alexjavi
+
+  mySubnetPrivate:
+    DependsOn: myVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: myVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: "us-west-1c"
+      Tags:
+      - Key: Name
+        Value: private_alexjavi
+
+  intGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: iGateway
+
+  attachIG:
+    DependsOn: intGateway
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: intGateway
+      VpcId:
+        Ref: myVPC
+
+  publicRouteTable:
+    DependsOn: mySubnetPublic
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: myVPC
+      Tags:
+      - Key: Name
+        Value: publicRouteTable
+
+  assocPublicSubnet:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: mySubnetPublic
+      RouteTableId:
+        Ref: publicRouteTable
+
+  publicRoute:
+    DependsOn: intGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: publicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: intGateway
+
+  elasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: 
+        Ref: myVPC
+
+  natGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - elasticIP
+        - AllocationId
+      SubnetId:
+        Ref: mySubnetPrivate
+
+Outputs:
+  SubnetId:
+    Description: "ID Subnet publica A"
+    Value: !Ref mySubnetPublic

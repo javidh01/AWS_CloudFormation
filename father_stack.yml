@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  myVPC:
+    Type: "AWS::CloudFormation::Stack"
+    Properties: 
+      TimeoutInMinutes: 60
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-devops2/JaviAlex/plantilla_vpc.yaml
+  myELB:
+    Type: "AWS::CloudFormation::Stack"
+    Properties: 
+      Parameters:
+        SubnetId:
+          Fn::GetAtt;
+          - myVPC
+          - Outputs.mySubnetPublic
+      TimeoutInMinutes: 60
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-devops2/JaviAlex/plantilla_elb.yaml
+
+
+  
